@@ -59,6 +59,7 @@ if st.button("Analyze Vibe"):
         try:
             with st.spinner("Fetching data..."):
                 # Get Coordinates
+                st.write("Debug: Fetching coordinates...")
                 lat_a, lon_a = get_coords(city_a)
                 lat_b, lon_b = get_coords(city_b)
                 
@@ -67,17 +68,20 @@ if st.button("Analyze Vibe"):
                 elif lat_b is None:
                     st.error(f"Could not find coordinates for {city_b}")
                 else:
+                    st.write(f"Debug: Coordinates found. {city_a}: {lat_a}, {lon_a}. {city_b}: {lat_b}, {lon_b}")
+                    
                     # Ensure dates are strings in YYYY-MM-DD format
-                    # If start_date is a datetime/date object, convert it
                     s_date = start_date.strftime("%Y-%m-%d") if hasattr(start_date, 'strftime') else str(start_date)
                     e_date = end_date.strftime("%Y-%m-%d") if hasattr(end_date, 'strftime') else str(end_date)
 
                     # Get Weather Data
+                    st.write("Debug: Fetching weather API data...")
                     data_a = get_weather(lat_a, lon_a, s_date, e_date)
                     data_b = get_weather(lat_b, lon_b, s_date, e_date)
                     
                     if data_a and data_b and "daily" in data_a and "daily" in data_b:
                         # Process Data
+                        st.write("Debug: Processing dataframes...")
                         df_a = pd.DataFrame({
                             "Date": data_a["daily"]["time"],
                             "Max Temp": data_a["daily"]["temperature_2m_max"],
@@ -102,21 +106,28 @@ if st.button("Analyze Vibe"):
                         m_col2.metric(f"Avg Max Temp ({city_b})", f"{avg_b:.1f}°C")
                         
                         # Display Line Chart
-                        fig = px.line(
-                            df, 
-                            x="Date", 
-                            y="Max Temp", 
-                            color="City", 
-                            title="Max Daily Temperature Comparison",
-                            color_discrete_map={city_a: "#00FFFF", city_b: "#FF4500"} # Neon Blue & Sunset Orange
-                        )
-                        st.plotly_chart(fig, width="stretch")
+                        st.write("Debug: Rendering Plotly chart...")
+                        try:
+                            fig = px.line(
+                                df, 
+                                x="Date", 
+                                y="Max Temp", 
+                                color="City", 
+                                title="Max Daily Temperature Comparison",
+                                color_discrete_map={city_a: "#00FFFF", city_b: "#FF4500"} # Neon Blue & Sunset Orange
+                            )
+                            st.plotly_chart(fig, width="stretch")
+                        except Exception as chart_error:
+                            st.error(f"Chart failed to render: {chart_error}")
                         
                         # Display Raw Data
                         with st.expander("View Raw Data"):
                             st.dataframe(df)
+                        
+                        st.success("Debug: Finished successfully.")
                             
                     else:
                         st.error("Error fetching weather data. Please check the city names or try again later.")
         except Exception as e:
             st.error(f"An unexpected error occurred: {e}")
+            st.write(f"Full error details: {e}")
