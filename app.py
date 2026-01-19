@@ -56,59 +56,67 @@ if st.button("Analyze Vibe"):
     if not city_a or not city_b:
         st.error("Please enter both cities.")
     else:
-        with st.spinner("Fetching data..."):
-            # Get Coordinates
-            lat_a, lon_a = get_coords(city_a)
-            lat_b, lon_b = get_coords(city_b)
-            
-            if lat_a is None:
-                st.error(f"Could not find coordinates for {city_a}")
-            elif lat_b is None:
-                st.error(f"Could not find coordinates for {city_b}")
-            else:
-                # Get Weather Data
-                data_a = get_weather(lat_a, lon_a, start_date, end_date)
-                data_b = get_weather(lat_b, lon_b, start_date, end_date)
+        try:
+            with st.spinner("Fetching data..."):
+                # Get Coordinates
+                lat_a, lon_a = get_coords(city_a)
+                lat_b, lon_b = get_coords(city_b)
                 
-                if data_a and data_b and "daily" in data_a and "daily" in data_b:
-                    # Process Data
-                    df_a = pd.DataFrame({
-                        "Date": data_a["daily"]["time"],
-                        "Max Temp": data_a["daily"]["temperature_2m_max"],
-                        "City": city_a
-                    })
-                    
-                    df_b = pd.DataFrame({
-                        "Date": data_b["daily"]["time"],
-                        "Max Temp": data_b["daily"]["temperature_2m_max"],
-                        "City": city_b
-                    })
-                    
-                    df = pd.concat([df_a, df_b])
-                    
-                    # Calculate Metrics
-                    avg_a = df_a["Max Temp"].mean()
-                    avg_b = df_b["Max Temp"].mean()
-                    
-                    # Display Metrics
-                    m_col1, m_col2 = st.columns(2)
-                    m_col1.metric(f"Avg Max Temp ({city_a})", f"{avg_a:.1f}°C")
-                    m_col2.metric(f"Avg Max Temp ({city_b})", f"{avg_b:.1f}°C")
-                    
-                    # Display Line Chart
-                    fig = px.line(
-                        df, 
-                        x="Date", 
-                        y="Max Temp", 
-                        color="City", 
-                        title="Max Daily Temperature Comparison",
-                        color_discrete_map={city_a: "#00FFFF", city_b: "#FF4500"} # Neon Blue & Sunset Orange
-                    )
-                    st.plotly_chart(fig, width="stretch")
-                    
-                    # Display Raw Data
-                    with st.expander("View Raw Data"):
-                        st.dataframe(df)
-                        
+                if lat_a is None:
+                    st.error(f"Could not find coordinates for {city_a}")
+                elif lat_b is None:
+                    st.error(f"Could not find coordinates for {city_b}")
                 else:
-                    st.error("Error fetching weather data.")
+                    # Ensure dates are strings in YYYY-MM-DD format
+                    # If start_date is a datetime/date object, convert it
+                    s_date = start_date.strftime("%Y-%m-%d") if hasattr(start_date, 'strftime') else str(start_date)
+                    e_date = end_date.strftime("%Y-%m-%d") if hasattr(end_date, 'strftime') else str(end_date)
+
+                    # Get Weather Data
+                    data_a = get_weather(lat_a, lon_a, s_date, e_date)
+                    data_b = get_weather(lat_b, lon_b, s_date, e_date)
+                    
+                    if data_a and data_b and "daily" in data_a and "daily" in data_b:
+                        # Process Data
+                        df_a = pd.DataFrame({
+                            "Date": data_a["daily"]["time"],
+                            "Max Temp": data_a["daily"]["temperature_2m_max"],
+                            "City": city_a
+                        })
+                        
+                        df_b = pd.DataFrame({
+                            "Date": data_b["daily"]["time"],
+                            "Max Temp": data_b["daily"]["temperature_2m_max"],
+                            "City": city_b
+                        })
+                        
+                        df = pd.concat([df_a, df_b])
+                        
+                        # Calculate Metrics
+                        avg_a = df_a["Max Temp"].mean()
+                        avg_b = df_b["Max Temp"].mean()
+                        
+                        # Display Metrics
+                        m_col1, m_col2 = st.columns(2)
+                        m_col1.metric(f"Avg Max Temp ({city_a})", f"{avg_a:.1f}°C")
+                        m_col2.metric(f"Avg Max Temp ({city_b})", f"{avg_b:.1f}°C")
+                        
+                        # Display Line Chart
+                        fig = px.line(
+                            df, 
+                            x="Date", 
+                            y="Max Temp", 
+                            color="City", 
+                            title="Max Daily Temperature Comparison",
+                            color_discrete_map={city_a: "#00FFFF", city_b: "#FF4500"} # Neon Blue & Sunset Orange
+                        )
+                        st.plotly_chart(fig, width="stretch")
+                        
+                        # Display Raw Data
+                        with st.expander("View Raw Data"):
+                            st.dataframe(df)
+                            
+                    else:
+                        st.error("Error fetching weather data. Please check the city names or try again later.")
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
