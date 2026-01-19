@@ -104,7 +104,7 @@ if st.button("Analyze Vibe"):
                         title="Max Daily Temperature Comparison",
                         color_discrete_map={city_a: "#00FFFF", city_b: "#FF4500"} # Neon Blue & Sunset Orange
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                     
                     # Display Raw Data
                     with st.expander("View Raw Data"):
